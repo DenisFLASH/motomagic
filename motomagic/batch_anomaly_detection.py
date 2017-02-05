@@ -18,7 +18,9 @@ if __name__ == '__main__':
     ########################################
     ###  Load trips into dataframe dict  ###
     ########################################
-    DATA_DIR = '../data/new_logger_november_december/'
+    DATA_DIR = '../data/new_logger/'
+    HISTOGRAMS_DIR = '../plots/2017-02/accelerationX_centered_gyroRotationX/'
+
     trip_ids = get_trip_ids(DATA_DIR)
 
     trips = dict()
@@ -41,8 +43,7 @@ if __name__ == '__main__':
 
     show_distr_ranges_from_data(trips.values(), FEATURE_COLS)
 
-    histograms_folder = '../plots/2017-01/accelerationX_centered_gyroRotationX/'
-    plot_histograms(trips, trip_ids, FEATURE_COLS, histograms_folder)
+    plot_histograms(trips, trip_ids, FEATURE_COLS, HISTOGRAMS_DIR)
 
     ######################
     ####  Features #######
