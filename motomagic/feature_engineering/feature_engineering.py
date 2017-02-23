@@ -1,21 +1,14 @@
 # -*- coding  utf-8 -*-
 
-import os
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import os
 
 from data_preparation import get_distr_ranges
-
 
 N_BINS = 20  # TODO parameter for feature engineering
 HIST_Y_LIM = [0.0, 0.4]  # TODO parametrize or calculate for each hist
 
-
-def calc_hist_values(values, bins):
-    # Normalization
-    weights = np.ones_like(values) / len(values)
-    hist_values, _ = np.histogram(values, bins=bins, weights=weights)
-    return hist_values
 
 
 def create_feature_matrix(trips, trip_ids, feature_cols):
@@ -26,30 +19,6 @@ def create_feature_matrix(trips, trip_ids, feature_cols):
         feature_vectors.append(np.hstack(tuple(features_dict[trip_id].values())))
     X = np.vstack(feature_vectors)
     return X
-
-
-def _build_features_dict(trips, trip_ids, feature_cols):
-    distr_ranges = get_distr_ranges()
-    print("distr_ranges (hardcoded):", distr_ranges)
-
-    features_dict = dict()
-    for trip_id in trip_ids:
-        features_dict[trip_id] = dict()
-        trip = trips[trip_id]
-        print(trip_id, end='\t')
-
-        for feature_col in feature_cols:
-            print(feature_col, end='\t')
-            col_values = trip[feature_col].values
-            col_min_value, col_max_value = distr_ranges[feature_col]
-            col_bins = np.linspace(col_min_value, col_max_value, num=N_BINS + 1)
-            # print('bins:', col_bins)
-            col_values_distr = calc_hist_values(col_values, col_bins)
-            # print('values_distr:', col_values_distr)
-            features_dict[trip_id][feature_col] = col_values_distr
-        print()
-
-    return features_dict
 
 
 def plot_histograms(trips, trip_ids, feature_cols, out_folder):
@@ -88,5 +57,32 @@ def plot_histograms(trips, trip_ids, feature_cols, out_folder):
             os.makedirs(out_folder)
             print("folder created", out_folder)
         path = os.path.join(out_folder, '{}.png'.format(trip_id))
-        print('saving', path)
+        # print('saving', path)
         plt.savefig(path)
+
+
+def _calc_hist_values(values, bins):
+    weights = np.ones_like(values) / len(values)  # normalization
+    hist_values, _ = np.histogram(values, bins=bins, weights=weights)
+    return hist_values
+
+
+def _build_features_dict(blocks, block_ids, feature_cols):
+    print("\nbuilding features dict")
+    distr_ranges = get_distr_ranges()
+    print("distr_ranges (hardcoded):", distr_ranges)
+
+    features_dict = dict()
+    for block_id in block_ids:
+        features_dict[block_id] = dict()
+        block = blocks[block_id]
+        for feature_col in feature_cols:
+            col_values = block[feature_col].values
+            col_min_value, col_max_value = distr_ranges[feature_col]
+            col_bins = np.linspace(col_min_value, col_max_value, num=N_BINS + 1)
+            # print('bins:', col_bins)
+            col_values_distr = _calc_hist_values(col_values, col_bins)
+            # print('values_distr:', col_values_distr)
+            features_dict[block_id][feature_col] = col_values_distr
+
+    return features_dict

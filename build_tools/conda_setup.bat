@@ -9,4 +9,4 @@ cd ..
 REM pip install -r build_tools/requirements_pip.txt
 
 python setup.py develop
-REM python -c "import motomagic.tests as t; t.run()"
+python -c "import motomagic.tests as mt; mt.run()"

@@ -1,11 +1,15 @@
 # -*- coding  utf-8 -*-
 
 import os
+from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
 
-MIN_SPEED = 5  # TODO add to configuration file
+# TODO add to configuration file
+MIN_SPEED = 5
+BLOCK_SIZE = 10
+RATIO_OVER_MIN_SPEED_IN_BLOCK = 0.8
 
 
 def get_trip_ids(folder):
@@ -55,7 +59,7 @@ def _filter_data(df, min_speed):
     """
     Filter trip data using a threshold speed
 
-    :param df:          log data of one trip
+    :param df:          log data of one trip/block
     :param min_speed:   speed threshold for filtering
     :return:            filtered dataframe
     """
@@ -76,3 +80,50 @@ def _subtract_average_accelerations(df):
     return df
 
 
+def _read_datetime(datetime_str):
+    return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S.%f")
+
+
+def split_trip_into_blocks(trip):
+    trip_centered = _subtract_average_accelerations(trip)  # TODO validate this step
+
+    block_indices = get_blocks_indices(trip_centered)
+    blocks = list()
+    for idx_start, idx_end in block_indices:
+        #print(idx_start, "...", idx_end)
+        block = trip[idx_start:idx_end+1].copy().reset_index()
+        block_filtered = _filter_data(block, MIN_SPEED)
+        filter_ratio = len(block_filtered) / len(block)
+        title = get_block_title(block)
+        if filter_ratio >= RATIO_OVER_MIN_SPEED_IN_BLOCK:
+            print("block {} added, filter ratio ok: {}".format(title, filter_ratio))
+            blocks.append(block)
+        else:
+            print("block {} ignored, insufficient filter ratio: {}".format(title, filter_ratio))
+    return blocks
+
+
+def get_blocks_indices(trip):
+    trip = trip.copy()
+    trip['time'] = np.vectorize(_read_datetime)(trip['loggingTime'])
+    N = len(trip)
+    block_indices = list()
+    idx_start = 0
+    max_time = trip.time[N-1]
+    while idx_start < N:
+        t_start = trip.time[idx_start]
+        t_end = t_start + timedelta(0, BLOCK_SIZE, 0)
+        if t_end > max_time:
+            break
+        else:
+            for idx in range(idx_start+1, N):
+                if trip.time[idx] >= t_end:
+                    block_indices.append((idx_start, idx))
+                    idx_start = idx+1
+                    break
+    return block_indices
+
+
+def get_block_title(block):
+    dt = block['loggingTime'][0][:19]
+    return 'BL_' + dt.replace(' ', '_').replace(':', '-')
