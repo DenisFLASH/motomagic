@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
+from motomagic.data_preparation.block import Block
+
 
 # TODO add to configuration file
 MIN_SPEED = 5
@@ -91,15 +93,17 @@ def split_trip_into_blocks(trip):
     blocks = list()
     for idx_start, idx_end in block_indices:
         #print(idx_start, "...", idx_end)
-        block = trip[idx_start:idx_end+1].copy().reset_index()
-        block_filtered = _filter_data(block, MIN_SPEED)
-        filter_ratio = len(block_filtered) / len(block)
-        title = get_block_title(block)
-        if filter_ratio >= RATIO_OVER_MIN_SPEED_IN_BLOCK:
-            print("block {} added, filter ratio ok: {}".format(title, filter_ratio))
+        block_data = trip[idx_start:idx_end+1].copy().reset_index()
+        start_time = block_data['loggingTime'][0][:19]
+        filtered_block_data = _filter_data(block_data, MIN_SPEED)
+        filtered_ratio = len(filtered_block_data) / len(block_data)
+        block = Block(device_id="device_id_123", start_time=start_time, size=BLOCK_SIZE,
+                      filtered_ratio=filtered_ratio, data=filtered_block_data)
+        if filtered_ratio >= RATIO_OVER_MIN_SPEED_IN_BLOCK:
             blocks.append(block)
+            print("block {} added, filter ratio ok: {}".format(block.start_time, block.filtered_ratio))
         else:
-            print("block {} ignored, insufficient filter ratio: {}".format(title, filter_ratio))
+            print("block {} ignored, insufficient filter ratio: {}".format(block.start_time, block.filtered_ratio))
     return blocks
 
 
@@ -122,8 +126,3 @@ def get_blocks_indices(trip):
                     idx_start = idx+1
                     break
     return block_indices
-
-
-def get_block_title(block):
-    dt = block['loggingTime'][0][:19]
-    return 'BL_' + dt.replace(' ', '_').replace(':', '-')

@@ -1,9 +1,10 @@
 # -*- coding  utf-8 -*-
 
+import sys
+
 from anomaly_detection import calc_anomaly_scores
-from data_preparation import get_trip_ids, load_trip, preprocess_trip, \
-    show_distr_ranges_from_data, split_trip_into_blocks, get_block_title
-from feature_engineering import plot_histograms, create_feature_matrix
+from data_preparation import get_trip_ids, load_trip, show_distr_ranges_from_data, split_trip_into_blocks
+from tools.database import insert_block
 
 #########################################
 #### Create features, plot histograms ###
@@ -17,11 +18,11 @@ if __name__ == '__main__':
     ###  Load trips into dataframe dict  ###
     ########################################
     DATA_DIR = '../data/new_logger_short/'
-    HISTOGRAMS_DIR = '../plots/2017-02/accelerationX_centered_gyroRotationX/'
+    HISTOGRAMS_DIR = '../plots/2017-03/accelerationX_centered_gyroRotationX/'  # TODO parametrize folder name, calculate automatically out of date and feature columns
 
     trip_ids = get_trip_ids(DATA_DIR)
 
-    blocks = dict()
+    #blocks = dict()
     for trip_id in trip_ids:
         trip = load_trip(DATA_DIR, trip_id)
         #trip_clean = preprocess_trip(trip)
@@ -30,14 +31,16 @@ if __name__ == '__main__':
         print("\ntrip", trip_id)
         current_trip_blocks = split_trip_into_blocks(trip)
         for block in current_trip_blocks:
-            block_id = get_block_title(block)
-            blocks[block_id] = block
+            block_id = block.start_time
+            #blocks[block_id] = block
+            insert_block(block)
         #trips[trip_id] = trip_clean
 
-    print('total blocks in dictionary:', len(blocks))
-    block_ids = list(blocks.keys())
+    #print('total blocks in dictionary:', len(blocks))
+    #block_ids = list(blocks.keys())
+    #print(block_ids)
 
-
+    sys.exit(0)
 
     #FEATURE_COLS = ['accelerometerAccelerationX', 'accelerometerAccelerationY','accelerometerAccelerationZ']
     #FEATURE_COLS = ['gyroRotationX']  #, 'gyroRotationY','gyroRotationZ']
